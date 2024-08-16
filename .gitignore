@@ -1,0 +1,15 @@
+.env
+.venv
+env/
+env.bak/
+venv.bak/
+/logs/*.log
+/media/*.*
+venv/
+/venv/
+__pycache__/
+.vscode/
+.vscode
+.idea
+.idea/
+*.log

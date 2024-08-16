@@ -1,0 +1,8 @@
+API_KEY='token_from_lastfm_api'
+API_URL='https://ws.audioscrobbler.com/2.0/?'
+DIR_PATH = 'media'
+LOGS_DIR = 'logs'
+FILE_EXT = '.mp3'
+METHOD = 'album.getInfo'
+REQUEST_FORMAT = 'json' 
+THREADS= 10
