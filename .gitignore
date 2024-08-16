@@ -4,7 +4,7 @@ env/
 env.bak/
 venv.bak/
 logs/*.log
-media/*.*
+media/*.mp3
 venv/
 /venv/
 __pycache__/
