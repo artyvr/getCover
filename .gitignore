@@ -3,8 +3,8 @@
 env/
 env.bak/
 venv.bak/
-/logs/*.log
-/media/*.*
+logs/*.log
+media/*.*
 venv/
 /venv/
 __pycache__/
