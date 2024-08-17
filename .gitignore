@@ -5,6 +5,8 @@ env.bak/
 venv.bak/
 logs/*.log
 media/*.mp3
+/media/**/*.mp3
+/media/**/*.jpg
 venv/
 /venv/
 __pycache__/

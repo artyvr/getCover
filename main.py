@@ -1,4 +1,4 @@
-""" Get cover """
+""" Get cover from last FM API """
 
 import os
 import glob
@@ -10,7 +10,7 @@ from multiprocessing import Pool
 from urllib.parse import urlsplit
 from mutagen.id3 import ID3, APIC
 from mutagen.mp3 import MP3
-import wget
+from mutagen import MutagenError
 import requests
 from dotenv import dotenv_values
 
@@ -30,6 +30,15 @@ logs_dir = config['LOGS_DIR']
 
 logging.basicConfig(level=logging.INFO, filename=f"{logs_dir}/getCover_{now}.log", filemode="w")
 logging.info("Start at %s with %s threads", now, threads)
+
+
+def download_file(url, filename):
+    """ Download file from over http """
+    try:
+        with open(filename, 'wb') as file:
+            file.write(requests.get(url, timeout=10).content)
+    except Exception as e:
+        logging.error("%s - %s Download file error %s", url, filename, e)
 
 
 def last_fm_request(artist, album):
@@ -62,15 +71,24 @@ def get_mp3_img(file):
     """ Download album image """
     try:
         file_ = MP3(file)
-        album = file_.tags['TALB']
-        artist = file_.tags['TPE1']
+        if 'TALB' in file_:
+            album = file_.tags['TALB']
+        else:
+            album = None
+            logging.error("No album field in %s", file)
+        if 'TPE1' in file_:
+            artist = file_.tags['TPE1']
+        else:
+            artist = None
+            logging.error("No artist field in %s", file)
         if album is not None and artist is not None:
             response_data = last_fm_request(artist, album)
             img_url = response_data.json()['album']['image'][5]['#text']
             album = response_data.json()['album']['name']
-            img_file_path = f"{os.path.dirname(file)}/{artist}-{album}_cover{os.path.splitext(urlsplit(img_url).path)[-1]}"
+            img_filename = f"{artist}-{album}_cover{os.path.splitext(urlsplit(img_url).path)[-1]}"
+            img_file_path = f"{os.path.dirname(file)}/{img_filename}"
             if not Path(img_file_path).exists():
-                wget.download(img_url, img_file_path)
+                download_file(img_url, img_file_path)
                 logging.info("Download image for %s - OK", file)
             else:
                 logging.info("Image for %s already exist", file)
@@ -78,6 +96,8 @@ def get_mp3_img(file):
         else:
             logging.warning("%s - Album or Artist is empty, skip file", file)
             return None
+    except MutagenError as e:
+        logging.error("%s - Mutagen error: %e, skip file", file, e)
     except Exception as e:
         logging.error("%s - Get image error: %e, skip file", file, e)
 
@@ -97,12 +117,14 @@ def add_img_to_mp3(file):
                     data=open(img,'rb').read()
                     ))
             file_.save()
-            logging.info(f"Add image for {file} - OK")
+            logging.info("Add image for %s - OK", file)
         else:
-            logging.warning(f"{file} - Image not found, skip file")
+            logging.warning("%s - Image not found, skip file", file)
             return None
+    except MutagenError as e:
+        logging.error("%s - Mutagen error: %e, skip file", file, e)
     except Exception as e:
-        logging.error(f"{file} - Add image to mp3 file error: {e}, skip file")
+        logging.error("%s - Add image to mp3 file error: %s, skip file", file, e)
 
 
 def main():
