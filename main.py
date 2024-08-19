@@ -105,7 +105,7 @@ def get_mp3_img(file):
     except MutagenError as e:
         logging.error("%s - Mutagen error: %s, skip file", file, e)
         return None
-    except Exception as e:
+    except OSError as e:
         logging.error("%s - Get image error: %s, skip file", file, e)
         return None
 
