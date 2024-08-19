@@ -59,12 +59,16 @@ def last_fm_request(artist, album):
         return response
     except requests.exceptions.ConnectionError:
         logging.error("%s - %s LastFM API error - A connection error occurred." , artist, album)
+        return None
     except requests.exceptions.Timeout:
         logging.error("%s - %s LastFM API error - The request timed out." , artist, album)
+        return None
     except requests.exceptions.HTTPError as e:
         logging.error("%s - %s LastFM API error - HTTP Error: %s", artist, album, e)
+        return None
     except requests.exceptions.RequestException as e:
         logging.error("%s - %s LastFM API error - An error occurred: %s", artist, album, e)
+        return None
 
 
 def get_mp3_img(file):
@@ -98,8 +102,10 @@ def get_mp3_img(file):
             return None
     except MutagenError as e:
         logging.error("%s - Mutagen error: %e, skip file", file, e)
+        return None
     except Exception as e:
         logging.error("%s - Get image error: %e, skip file", file, e)
+        return None
 
 
 
