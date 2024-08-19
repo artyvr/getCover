@@ -4,5 +4,5 @@ DIR_PATH = 'media'
 LOGS_DIR = 'logs'
 FILE_EXT = '.mp3'
 METHOD = 'album.getInfo'
-REQUEST_FORMAT = 'json' 
+REQUEST_FORMAT = 'json'
 THREADS= 10

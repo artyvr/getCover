@@ -131,7 +131,7 @@ def add_img_to_mp3(file):
         logging.warning("%s - Image not found, skip file", file)
     except MutagenError as e:
         logging.error("%s - Mutagen error: %s, skip file", file, e)
-    except Exception as e:
+    except OSError as e:
         logging.error("%s - Add image to mp3 file error: %s, skip file", file, e)
     finally:
         f.close()
@@ -141,6 +141,8 @@ def main():
     """ Main """
     start = datetime.now()
     files_ = glob.glob(dirPath + '/**/*.mp3', recursive=True)
+    files_count = files_.count()
+    logging.info("Total %s - files", files_count)
     #for file_ in files_:
     #    addImgToMp3(file_)
     with Pool(threads) as p:
