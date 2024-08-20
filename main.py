@@ -10,7 +10,6 @@ from multiprocessing import Pool
 from urllib.parse import urlsplit
 from mutagen.id3 import ID3, APIC
 from mutagen.mp3 import MP3
-from mutagen import MutagenError
 import requests
 from dotenv import dotenv_values
 
@@ -35,14 +34,13 @@ logging.info("Start at %s with %s threads", now, threads)
 def download_file(url, filename):
     """ Download file from over http """
     try:
+        req = requests.get(url, timeout=10)
         with open(filename, 'wb') as f:
-            f.write(requests.get(url, timeout=10).content)
+            f.write(req.content)
         return True
-    except OSError as e:
+    except Exception as e: # pylint: disable=broad-except
         logging.error("%s - %s Download file error %s", url, filename, e)
         return False
-    finally:
-        f.close()
 
 
 def last_fm_request(artist, album):
@@ -61,16 +59,7 @@ def last_fm_request(artist, album):
         response = requests.get(api_url, headers=headers, params=payload, timeout=10)
         logging.info("Get info for %s - %s - OK", artist, album)
         return response
-    except requests.exceptions.ConnectionError:
-        logging.error("%s - %s LastFM API error - A connection error occurred." , artist, album)
-        return None
-    except requests.exceptions.Timeout:
-        logging.error("%s - %s LastFM API error - The request timed out." , artist, album)
-        return None
-    except requests.exceptions.HTTPError as e:
-        logging.error("%s - %s LastFM API error - HTTP Error: %s", artist, album, e)
-        return None
-    except requests.exceptions.RequestException as e:
+    except Exception as e: # pylint: disable=broad-except
         logging.error("%s - %s LastFM API error - An error occurred: %s", artist, album, e)
         return None
 
@@ -102,23 +91,33 @@ def get_mp3_img(file):
             logging.info("Image for %s already exist", file)
         logging.warning("%s - Album or Artist is empty, skip file", file)
         return None
-    except MutagenError as e:
-        logging.error("%s - Mutagen error: %s, skip file", file, e)
-        return None
-    except OSError as e:
+    except Exception as e: # pylint: disable=broad-except
         logging.error("%s - Get image error: %s, skip file", file, e)
         return None
 
+def del_img_from_mp3(file):
+    """ Delete APIC id3 tag from file"""
+    try:
+        id3 = ID3(file)
+        if id3.getall('APIC'):
+            id3.delall('APIC')
+            id3.save()
+            return True
+        return False
+    except Exception as e: # pylint: disable=broad-except
+        logging.error("%s - Delete APIC id3 tag error: %s, skip file", file, e)
+        return False
 
 
 def add_img_to_mp3(file):
     """ Add image to mp3 file """
     try:
         file_ = MP3(file, ID3=ID3)
+        #del_img_from_mp3(file)
         img = get_mp3_img(file)
-        with open(img,'rb') as f:
-            file_data = f.read()
         if img is not None:
+            with open(img,'rb') as f:
+                file_data = f.read()
             file_.tags.add(APIC(
                     encoding=0,
                     mime=mimetypes.guess_type(img),
@@ -129,20 +128,16 @@ def add_img_to_mp3(file):
             file_.save()
             logging.info("Add image for %s - OK", file)
         logging.warning("%s - Image not found, skip file", file)
-    except MutagenError as e:
-        logging.error("%s - Mutagen error: %s, skip file", file, e)
-    except OSError as e:
+    except Exception as e: # pylint: disable=broad-except
         logging.error("%s - Add image to mp3 file error: %s, skip file", file, e)
-    finally:
-        f.close()
 
 
 def main():
     """ Main """
     start = datetime.now()
     files_ = glob.glob(dirPath + '/**/*.mp3', recursive=True)
-    files_count = files_.count()
-    logging.info("Total %s - files", files_count)
+    files_count = len(files_)
+    logging.info("Total %s - files", str(files_count))
     #for file_ in files_:
     #    addImgToMp3(file_)
     with Pool(threads) as p:
